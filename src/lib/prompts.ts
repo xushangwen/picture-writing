@@ -1,229 +1,256 @@
 import { ImageType } from '@/types';
 
-// 结构化提示词模板系统
-// 核心思想：先选定逻辑合理的"场景模板"，再在模板允许的范围内随机填充细节
-// 解决了纯随机带来的逻辑冲突问题（如"鱼在天上飞"），同时保留了极高的多样性
+// ----------------------------------------------------------------------
+// 原子化场景系统 (Atomic Scenarios)
+// 核心思想：不再让变量自由组合，而是预设"逻辑闭环"的场景包。
+// 解决问题：彻底杜绝"夜晚+金色"、"冬天+鲜花"等逻辑冲突。
+// ----------------------------------------------------------------------
 
-interface PromptTemplate {
-  template: string; // 模板字符串，如 "{subject}在{location}{action}"
-  variables: {
-    [key: string]: string[]; // 变量池，如 subject: ['小猫', '小狗']
-  };
-  styles: string[]; // 风格池
+// 通用画面质量控制
+const QUALITY_SUFFIX = "，杰作，高分辨率，8k画质，构图完美，电影级光照";
+
+// ----------------------------------------------------------------------
+// 1. 风景场景 (Scenery) - 严格绑定 天气 + 时间 + 色调 + 元素
+// ----------------------------------------------------------------------
+
+interface SceneryScenario {
+  id: string;
+  season: string;
+  weather: string;     // 包含时间信息
+  elements: string[];  // 这里的元素必须完全符合该特定的天气和季节
+  colors: string[];    // 这里的色调必须符合该特定的光照
+  styles: string[];
 }
 
-const SCENE_TEMPLATES: Record<ImageType, PromptTemplate[]> = {
-  // 人物类模板
-  person: [
-    {
-      // 模板1：户外运动/玩耍
-      template: '一个{subject}在{location}{action}，{style}，阳光明媚，充满活力',
-      variables: {
-        subject: ['活泼的小男孩', '可爱的小女孩', '运动型的小朋友', '开心的小学生'],
-        location: ['公园的草坪上', '学校的操场上', '小区的花园里', '游乐园里', '体育场上'],
-        action: ['快乐地踢足球', '开心地跳绳', '认真地跑步', '放飞纸飞机', '追逐蝴蝶', '骑着自行车', '玩滑板'],
-      },
-      styles: ['色彩鲜艳的卡通风格', '动感的插画风格', '活泼的绘本风格']
-    },
-    {
-      // 模板2：安静学习/创作
-      template: '一位{subject}在{location}{action}，{style}，画面温馨宁静',
-      variables: {
-        subject: ['文静的小女孩', '专注的小男孩', '慈祥的老奶奶', '年轻的老师', '认真的画家'],
-        location: ['明亮的教室里', '安静的图书馆里', '温馨的书房里', '树荫下的长椅上', '窗台边'],
-        action: ['认真地看书', '专心地画画', '练习写字', '做手工', '观察植物', '思考问题'],
-      },
-      styles: ['清新的水彩风格', '温馨的插画风格', '柔和的卡通风格']
-    },
-    {
-      // 模板3：职业/角色扮演
-      template: '一位{subject}在{location}{action}，{style}，构图简单清晰',
-      variables: {
-        subject: ['勇敢的消防员叔叔', '和蔼的医生阿姨', '辛勤的园丁伯伯', '负责的警察叔叔', '专业的厨师'],
-        location: ['城市街道上', '医院诊室里', '美丽的花园中', '繁忙的厨房里', '消防车旁'],
-        action: ['帮助需要的人', '给小朋友检查身体', '修剪花草', '指挥交通', '制作美味的蛋糕'],
-      },
-      styles: ['职业感的卡通风格', '生动的插画风格', '扁平化设计风格']
-    },
-    {
-      // 模板4：家庭/生活
-      template: '一个{subject}在{location}{action}，{style}，充满爱的氛围',
-      variables: {
-        subject: ['懂事的小男孩', '乖巧的小女孩', '慈祥的爷爷', '温柔的妈妈'],
-        location: ['温馨的客厅里', '整洁的厨房里', '阳台上', '餐桌旁'],
-        action: ['帮忙做家务', '浇花', '整理玩具', '准备晚餐', '喂宠物', '叠衣服'],
-      },
-      styles: ['温暖的家庭插画风格', '可爱的卡通风格', '柔和色调风格']
-    }
-  ],
-
-  // 物品类模板
-  object: [
-    {
-      // 模板1：陆地小动物
-      template: '一只{characteristic}{subject}在{location}，{style}，呆萌可爱',
-      variables: {
-        characteristic: ['毛茸茸的', '圆滚滚的', '机灵的', '胖嘟嘟的', '小小的'],
-        subject: ['小猫咪', '小狗', '小兔子', '小松鼠', '小仓鼠', '熊猫宝宝'],
-        location: ['柔软的垫子上睡觉', '草地上打滚', '树下吃东西', '花丛中玩耍', '篮子里休息'],
-      },
-      styles: ['萌系卡通风格', '细腻的插画风格', '温暖的治愈风格']
-    },
-    {
-      // 模板2：飞行生物
-      template: '一只{characteristic}{subject}{location}，{style}，色彩斑斓',
-      variables: {
-        characteristic: ['漂亮的', '五彩斑斓的', '轻盈的', '可爱的'],
-        subject: ['蝴蝶', '小鸟', '蜻蜓', '蜜蜂', '鹦鹉'],
-        location: ['停在花朵上', '飞舞在花丛中', '站在树枝上唱歌', '在蓝天中飞翔'],
-      },
-      styles: ['唯美的绘本风格', '清新的水彩风格', '精致的插画风格']
-    },
-    {
-      // 模板3：静物/玩具
-      template: '一个{characteristic}{subject}放在{location}，{style}，光影柔和',
-      variables: {
-        characteristic: ['红彤彤的', '精致的', '可爱的', '崭新的', '漂亮的'],
-        subject: ['大苹果', '闹钟', '玩具熊', '书包', '足球', '礼物盒', '生日蛋糕'],
-        location: ['木质书桌上', '窗台上', '床头柜上', '野餐垫上', '书架上'],
-      },
-      styles: ['写实卡通风格', '简约插画风格', '静物画风格']
-    },
-    {
-      // 模板4：交通工具
-      template: '一辆{subject}在{location}，{style}，画面动感',
-      variables: {
-        subject: ['红色小汽车', '黄色校车', '蓝色小卡车', '帅气的警车', '可爱的冰淇淋车'],
-        location: ['宽阔的马路上行驶', '蜿蜒的山路上', '城市街道上穿梭', '彩虹桥上开过'],
-      },
-      styles: ['扁平化卡通风格', '酷炫插画风格', '交通科普风格']
-    }
-  ],
-
-  // 事件类模板
-  event: [
-    {
-      // 模板1：集体活动
-      template: '{participants}在{location}{activity}，{atmosphere}，{style}',
-      variables: {
-        participants: ['一群小朋友', '同学们', '一家人', '好朋友们'],
-        location: ['公园的草坪上', '学校操场上', '沙滩上', '游乐园里'],
-        activity: ['开心地野餐', '玩老鹰捉小鸡', '进行拔河比赛', '一起堆沙堡', '放风筝'],
-        atmosphere: ['充满了欢声笑语', '气氛热烈', '大家都很开心', '场面温馨'],
-      },
-      styles: ['热闹的卡通风格', '全景插画风格', '活力四射风格']
-    },
-    {
-      // 模板2：节日/庆典
-      template: '{participants}正在{location}{activity}，{style}，{atmosphere}',
-      variables: {
-        participants: ['全家人', '小朋友们', '师生们'],
-        location: ['装饰漂亮的房间里', '舞台上', '广场上'],
-        activity: ['庆祝生日', '举办新年晚会', '表演节目', '唱生日歌', '做游戏'],
-        atmosphere: ['喜气洋洋', '其乐融融', '温馨感人', '热闹非凡'],
-      },
-      styles: ['节日插画风格', '喜庆的卡通风格', '色彩丰富的风格']
-    },
-    {
-      // 模板3：自然探索/教育
-      template: '{participants}在{location}{activity}，{style}，寓教于乐',
-      variables: {
-        participants: ['好奇的小朋友', '科学小组', '老师和学生'],
-        location: ['植物园里', '科学博物馆', '森林小径上', '小河边'],
-        activity: ['观察昆虫', '种植小树苗', '做科学实验', '寻找落叶', '观察小蝌蚪'],
-      },
-      styles: ['科普插画风格', '清新的卡通风格', '探索主题风格']
-    }
-  ],
-
-  // 风景类模板
-  scenery: [
-    {
-      // 模板1：自然风光
-      template: '{season}的{place}，{element}，{style}，宁静美好',
-      variables: {
-        season: ['春天', '夏天', '秋天', '冬天'],
-        place: ['小山村', '森林公园', '田野', '湖边', '草原'],
-        element: ['开满了鲜花', '绿树成荫', '金色的麦浪', '白雪皑皑', '小溪潺潺流过'],
-      },
-      styles: ['风景水彩风格', '治愈系插画风格', '唯美意境风格']
-    },
-    {
-      // 模板2：天气/天象
-      template: '{weather}的{place}，{detail}，{style}，令人陶醉',
-      variables: {
-        weather: ['雨后', '阳光明媚', '星光璀璨', '夕阳西下'],
-        place: ['天空', '海边', '山顶', '城市上空'],
-        detail: ['出现了一道彩虹', '云朵像棉花糖一样', '挂满了星星', '被染成了金黄色'],
-      },
-      styles: ['梦幻插画风格', '艺术感风格', '清新治愈风格']
-    }
-  ]
-};
-
-// 智能随机生成提示词
-export function generateRandomPrompt(type: ImageType): string {
-  // 1. 随机选择一个该类型的逻辑模板
-  const templates = SCENE_TEMPLATES[type];
-  const selectedTemplate = templates[Math.floor(Math.random() * templates.length)];
+const SCENERY_SCENARIOS: SceneryScenario[] = [
+  // --- 春天 ---
+  {
+    id: 'spring_day',
+    season: '春天',
+    weather: '阳光明媚的早晨',
+    elements: ['盛开的粉色樱花', '嫩绿的柳条', '清澈的小溪', '飞舞的蝴蝶'],
+    colors: ['粉嫩色调', '清新嫩绿', '明亮'],
+    styles: ['水彩风格', '吉卜力风格']
+  },
+  {
+    id: 'spring_rain',
+    season: '春天',
+    weather: '绵绵细雨中',
+    elements: ['打着伞的行人', '湿润的石板路', '沾满雨露的绿叶', '朦胧的远山'],
+    colors: ['清新蓝绿色', '柔和灰调', '通透'],
+    styles: ['水墨画感', '治愈插画']
+  },
   
-  // 2. 填充模板变量
-  let prompt = selectedTemplate.template;
-  
-  // 替换所有变量占位符 {key}
-  Object.entries(selectedTemplate.variables).forEach(([key, values]) => {
-    const randomValue = values[Math.floor(Math.random() * values.length)];
-    prompt = prompt.replace(`{${key}}`, randomValue);
-  });
-  
-  // 3. 随机选择一种风格并替换 {style}
-  if (prompt.includes('{style}')) {
-    const randomStyle = selectedTemplate.styles[Math.floor(Math.random() * selectedTemplate.styles.length)];
-    prompt = prompt.replace('{style}', randomStyle);
+  // --- 夏天 ---
+  {
+    id: 'summer_beach',
+    season: '夏天',
+    weather: '烈日当空的中午',
+    elements: ['金色的沙滩', '蔚蓝的大海', '白色的海浪', '遮阳伞', '冰镇西瓜'],
+    colors: ['高饱和度蓝', '金黄色', '明亮通透'],
+    styles: ['新海诚风格', '高饱和卡通']
+  },
+  {
+    id: 'summer_night',
+    season: '夏天',
+    weather: '宁静的夏夜',
+    elements: ['漫天的繁星', '飞舞的萤火虫', '静谧的荷塘', '远处的灯火'],
+    colors: ['深蓝色调', '紫色光晕', '点点微光'], // 确保夜景是深色的
+    styles: ['梦幻插画', '唯美夜景']
+  },
+
+  // --- 秋天 ---
+  {
+    id: 'autumn_forest',
+    season: '秋天',
+    weather: '秋高气爽的午后',
+    elements: ['满地的红枫叶', '金黄的银杏树', '成熟的南瓜', '松果'],
+    colors: ['暖橙色', '金黄色', '浓郁'],
+    styles: ['油画风格', '温暖童话']
+  },
+
+  // --- 冬天 ---
+  {
+    id: 'winter_snow',
+    season: '冬天',
+    weather: '大雪纷飞的白天',
+    elements: ['厚厚的积雪', '堆好的雪人', '挂满雪的松树', '红色的屋顶'],
+    colors: ['纯净白色', '冷蓝色', '明亮'],
+    styles: ['冬季绘本', '极简风格']
+  },
+  {
+    id: 'winter_fireplace',
+    season: '冬天',
+    weather: '寒冷冬夜的室内',
+    elements: ['温暖的壁炉', '热气腾腾的可可', '窗花', '毛绒地毯'],
+    colors: ['暖黄色火光', '温馨橙色', '对比强烈'],
+    styles: ['室内温馨插画', '节日氛围']
   }
-  
-  return prompt;
+];
+
+// ----------------------------------------------------------------------
+// 2. 人物场景 (Person) - 严格绑定 地点 + 动作 + 主体
+// ----------------------------------------------------------------------
+
+interface PersonScenario {
+  location: string;
+  subjects: string[];
+  actions: string[]; // 动作必须在该地点物理上可行
+  vibe: string;
 }
 
-// 保留原有的固定提示词作为备用（可选）
+const PERSON_SCENARIOS: PersonScenario[] = [
+  {
+    location: '安静的图书馆角落',
+    subjects: ['扎着马尾的小女孩', '戴眼镜的小男孩'],
+    actions: ['全神贯注地看书', '在笔记本上写字', '踮起脚尖找书'],
+    vibe: '安静专注，书香气息，柔和光线'
+  },
+  {
+    location: '阳光下的操场',
+    subjects: ['活泼的小男孩', '穿着运动服的小学生'],
+    actions: ['快乐地踢足球', '奔跑追逐', '跳绳', '准备起跑'],
+    vibe: '活力四射，动感十足，阳光明媚'
+  },
+  {
+    location: '家里的厨房',
+    subjects: ['穿着围裙的妈妈', '乖巧的小帮手'],
+    actions: ['制作生日蛋糕', '洗水果', '摆放餐具'],
+    vibe: '温馨幸福，充满烟火气，暖色调'
+  },
+  {
+    location: '雨后的公园小径',
+    subjects: ['穿着雨衣的小朋友', '打着伞的一家人'],
+    actions: ['踩水坑', '观察蜗牛', '伸手接雨滴'],
+    vibe: '清新有趣，童真童趣，倒影清晰'
+  }
+];
+
+// ----------------------------------------------------------------------
+// 3. 物品/动物场景 (Object) - 严格绑定 主体 + 环境
+// ----------------------------------------------------------------------
+
+interface ObjectScenario {
+  category: string;
+  subjects: string[];
+  locations: string[]; // 必须是该物体出现的合理位置
+  actions: string[];
+}
+
+const OBJECT_SCENARIOS: ObjectScenario[] = [
+  {
+    category: '宠物',
+    subjects: ['橘色斑纹的小猫', '圆滚滚的小狗', '毛茸茸的仓鼠'],
+    locations: ['柔软的布艺沙发上', '温暖的阳光下', '主人的拖鞋旁'],
+    actions: ['蜷成一团睡觉', '歪着头好奇地看', '伸着懒腰'],
+  },
+  {
+    category: '森林动物',
+    subjects: ['机灵的小松鼠', '害羞的小鹿', '彩色的小鸟'],
+    locations: ['粗壮的树枝上', '森林深处的草丛里', '布满青苔的石头上'],
+    actions: ['捧着松果吃', '警觉地竖起耳朵', '梳理羽毛'],
+  },
+  {
+    category: '美食',
+    subjects: ['刚出炉的面包', '精致的小蛋糕', '红彤彤的苹果'],
+    locations: ['木质餐桌上', '野餐垫上', '精美的盘子里'],
+    actions: ['散发着热气', '点缀着水果', '光泽诱人'],
+  }
+];
+
+// ----------------------------------------------------------------------
+// 4. 事件场景 (Event) - 保持原有的强绑定逻辑
+// ----------------------------------------------------------------------
+
+const EVENT_SCENARIOS = [
+  {
+    scene: '生日派对',
+    elements: ['三层生日蛋糕', '五彩缤纷的气球', '堆成山的礼物'],
+    actions: ['吹灭蜡烛', '大家一起拍手', '切蛋糕'],
+    vibe: '热闹非凡，暖黄灯光，喜庆'
+  },
+  {
+    scene: '春节团圆',
+    elements: ['大红灯笼', '贴着春联的门', '热腾腾的饺子'],
+    actions: ['放鞭炮', '互相拜年', '全家举杯'],
+    vibe: '中国红，传统年味，团圆'
+  },
+  {
+    scene: '校园大扫除',
+    elements: ['水桶和抹布', '整洁的玻璃', '扫把'],
+    actions: ['擦黑板', '扫落叶', '浇花'],
+    vibe: '劳动光荣，团结协作，明亮'
+  }
+];
+
+// ----------------------------------------------------------------------
+// 工具函数
+// ----------------------------------------------------------------------
+
+function getRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+export function generateRandomPrompt(type: ImageType): string {
+  let finalPrompt = "";
+
+  switch (type) {
+    case 'scenery': {
+      // 核心：直接选取一个完整的 Scenario，不再分别随机属性
+      const scenario = getRandom(SCENERY_SCENARIOS);
+      
+      const element = getRandom(scenario.elements);
+      const color = getRandom(scenario.colors);
+      const style = getRandom(scenario.styles);
+      
+      finalPrompt = `一张风景画，${scenario.season}，${scenario.weather}，${scenario.id === 'summer_night' ? '画面整体偏暗' : ''}，画面重点是${element}，整体色调为${color}，${style}，光影协调，逻辑合理`;
+      break;
+    }
+
+    case 'person': {
+      const scenario = getRandom(PERSON_SCENARIOS);
+      const subject = getRandom(scenario.subjects);
+      const action = getRandom(scenario.actions);
+      
+      finalPrompt = `人物特写，地点在${scenario.location}，一个${subject}正在${action}，氛围${scenario.vibe}，迪士尼动画风格，表情生动`;
+      break;
+    }
+
+    case 'object': {
+      const scenario = getRandom(OBJECT_SCENARIOS);
+      const subject = getRandom(scenario.subjects);
+      const location = getRandom(scenario.locations);
+      const action = getRandom(scenario.actions);
+      
+      finalPrompt = `静物特写，${location}，有一只${subject}，它正在${action}，3D皮克斯风格，光影细腻，背景虚化`;
+      break;
+    }
+
+    case 'event': {
+      const scenario = getRandom(EVENT_SCENARIOS);
+      const element = getRandom(scenario.elements);
+      const action = getRandom(scenario.actions);
+      
+      finalPrompt = `集体活动，${scenario.scene}场景，大家正在${action}，画面中有${element}，氛围${scenario.vibe}，插画风格，细节丰富`;
+      break;
+    }
+  }
+
+  return finalPrompt + QUALITY_SUFFIX;
+}
+
+// 保持接口兼容
 export const IMAGE_PROMPTS: Record<ImageType, string[]> = {
-  person: [
-    '一个快乐的小朋友在阳光明媚的公园里玩耍，卡通风格，色彩明亮，构图简单清晰，适合儿童观看',
-    '一位慈祥的奶奶在织毛衣，温馨的插画风格，温暖的氛围，画面简洁',
-    '一个勇敢的消防员叔叔在帮助人们，卡通风格，英雄姿态，色彩鲜艳',
-    '一个小女孩在认真读书，可爱的卡通风格，温馨的书房场景',
-    '一个小男孩在帮妈妈做家务，温馨的家庭场景，卡通插画风格',
-  ],
-  object: [
-    '一只毛茸茸的橘色小猫咪在软垫上睡觉，可爱的卡通风格，柔和的光线',
-    '一只彩色的蝴蝶停在花朵上，儿童绘本插画风格，色彩缤纷',
-    '一个红彤彤的苹果放在木桌上，简单的卡通风格，画面干净',
-    '一只可爱的小狗在草地上奔跑，活泼的卡通风格，阳光明媚',
-    '一盆绿油油的小植物在窗台上，清新的插画风格，温馨的场景',
-  ],
-  event: [
-    '小朋友们在开生日派对，有蛋糕和气球，欢乐的卡通风格，热闹的氛围',
-    '一家人在公园里野餐，温馨的插画风格，幸福的场景',
-    '小朋友们在植树节种树，教育意义的卡通风格，阳光明媚',
-    '小朋友在帮助老奶奶过马路，温暖的卡通风格，城市街道场景',
-    '小朋友们在操场上做早操，活力四射的卡通风格，校园场景',
-  ],
-  scenery: [
-    '雨后美丽的彩虹挂在绿色的山丘上，梦幻的插画风格，色彩绚丽',
-    '春天的小村庄，樱花盛开，柔和的水彩风格，宁静美好',
-    '阳光明媚的海滩上有沙堡，欢快的卡通风格，蓝天白云',
-    '秋天的公园，落叶飘飘，温暖的插画风格，金黄色调',
-    '冬天的雪景，小朋友在堆雪人，可爱的卡通风格，白雪皑皑',
-  ],
+  person: [], object: [], event: [], scenery: [] 
 };
 
-// 随机获取一个 Prompt（使用新的动态生成）
 export function getRandomPrompt(type: ImageType): string {
-  // 使用动态生成，每次都是纯随机
   return generateRandomPrompt(type);
 }
 
-// AI 评分系统 Prompt
+// ----------------------------------------------------------------------
+// 评分系统 Prompt (保持不变)
+// ----------------------------------------------------------------------
 export const EVALUATION_SYSTEM_PROMPT = `你是一位温柔、充满鼓励的小学语文老师，通过"看图写话"激发一年级孩子的想象力和写作兴趣。你的目标是发现孩子作文中的闪光点，用温暖的语言给予正向反馈，小心翼翼地保护孩子的表达欲。
 
 ## 评分标准（满分100分，客观公正）

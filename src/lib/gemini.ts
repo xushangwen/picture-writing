@@ -28,7 +28,7 @@ export async function generateImage(type: ImageType): Promise<string> {
 Style requirements:
 - Children's drawing style / simple cartoon illustration
 - Clean lines, minimal details, simple shapes
-- Bright but not overwhelming colors
+- Colors MUST match the scene's atmosphere (e.g., dark for night, bright for day, cold for winter)
 - Flat design with basic shading
 - Focus on main subject, remove complex background elements
 - Like a children's book illustration or simple coloring book page
@@ -38,7 +38,9 @@ Technical requirements:
 - NO text, NO letters, NO words, NO numbers in the image
 - Pure visual illustration only
 - Keep composition simple and uncluttered
-- Use 3-5 main elements maximum`;
+- Use 3-5 main elements maximum
+- Logically consistent scene (no flowers in winter snow, no sun at night)
+`;
 
   const response = await model.generateContent(prompt);
   const result = response.response;
