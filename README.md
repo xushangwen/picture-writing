@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 看图写话小助手
 
-## Getting Started
+AI 辅助的看图写话练习平台，帮助小学低年级学生在"玩"中提升写作能力。
 
-First, run the development server:
+## 功能特点
 
+- 🎨 **AI 生图**：使用 Gemini 生成适合儿童的卡通风格图片
+- ✍️ **智能评分**：五维度评分（内容、语句、想象、用词、标点）
+- 💡 **温和建议**：以鼓励为主的评价方式
+- ✨ **范文参考**：AI 生成的优秀示例
+
+## 技术栈
+
+- Next.js 15 + React 19
+- Tailwind CSS v4
+- Framer Motion
+- Zustand
+- Google Gemini API
+
+## 快速开始
+
+1. 安装依赖：
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. 配置环境变量：
+```bash
+cp .env.example .env.local
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+编辑 `.env.local`，填入你的 Gemini API Key：
+```
+GEMINI_API_KEY=your_api_key_here
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. 启动开发服务器：
+```bash
+npm run dev
+```
 
-## Learn More
+4. 打开浏览器访问 http://localhost:3000
 
-To learn more about Next.js, take a look at the following resources:
+## 获取 Gemini API Key
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. 访问 [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. 登录 Google 账号
+3. 点击 "Create API Key" 创建密钥
+4. 复制密钥到 `.env.local` 文件
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 项目结构
 
-## Deploy on Vercel
+```
+src/
+├── app/
+│   ├── page.tsx              # 首页
+│   └── api/
+│       ├── generate-image/   # 图片生成 API
+│       └── evaluate/         # AI 评分 API
+├── components/
+│   ├── TypeSelector.tsx      # 类型选择器
+│   ├── ImageDisplay.tsx      # 图片展示
+│   ├── WritingArea.tsx       # 写作输入区
+│   └── ScorePanel.tsx        # 评分展示
+├── lib/
+│   ├── gemini.ts             # Gemini API 封装
+│   └── prompts.ts            # Prompt 模板
+├── store/
+│   └── appStore.ts           # 状态管理
+└── types/
+    └── index.ts              # 类型定义
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
